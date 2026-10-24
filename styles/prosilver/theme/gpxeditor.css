@@ -4,6 +4,12 @@
 	vertical-align: top;
 }
 
+.gpx-editor-icon {
+	width: 14px;
+	height: 14px;
+	vertical-align: middle;
+}
+
 .gpx-editor-panel {
 	position: absolute;
 	top: 100%;
@@ -51,24 +57,36 @@
 }
 
 .gpx-editor-sizes {
-	display: flex;
+	display: grid;
+	grid-template-columns: 1fr auto;
 	align-items: center;
-	flex-wrap: wrap;
-	gap: 4px 6px;
+	gap: 4px 8px;
 	margin: 0 0 8px;
 	font-size: 0.9em;
-}
-
-.gpx-editor-sizes label {
-	flex: 0 0 auto;
 }
 
 .gpx-editor-size {
 	width: 72px;
 }
 
-.gpx-editor-size:not(:last-child) {
-	margin-right: 6px;
+.gpx-editor-actions {
+	margin: 0 0 8px;
+	text-align: right;
+}
+
+.gpx-editor-apply.hidden {
+	display: none;
+}
+
+.gpx-editor-button--edit {
+	border-color: #105289;
+	box-shadow: inset 0 0 0 1px #105289;
+	color: #105289;
+}
+
+.gpx-editor-item.is-current {
+	font-weight: bold;
+	background-color: #e3e9ec;
 }
 
 .gpx-editor-list {

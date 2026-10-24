@@ -115,6 +115,7 @@ class main_listener implements EventSubscriberInterface
 		$this->template->assign_vars([
 			'GPX_PANEL_MAP_HEIGHT_DEFAULT'		=> isset($this->config['gpxviewer_map_height']) ? (int) $this->config['gpxviewer_map_height'] : 450,
 			'GPX_PANEL_PROFILE_HEIGHT_DEFAULT'	=> isset($this->config['gpxviewer_profile_height']) ? (int) $this->config['gpxviewer_profile_height'] : 180,
+			'GPX_PANEL_MAX_ZOOM_DEFAULT'		=> isset($this->config['gpxviewer_max_zoom']) ? (int) $this->config['gpxviewer_max_zoom'] : 19,
 		]);
 	}
 }

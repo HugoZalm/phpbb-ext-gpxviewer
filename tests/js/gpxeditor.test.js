@@ -1,6 +1,7 @@
 // Behaviour tests for the GPX editor panel (styles/prosilver/template/gpxeditor.js):
-// the panel lists only .gpx attachments and inserts [gpx=N] with optional
-// map-height/profile-height keys drawn from the two size fields.
+// the panel lists only .gpx attachments, inserts [gpx=N] with all of the
+// map-height/profile-height/max-zoom keys (blank fields fall back to the board
+// defaults in the placeholders), and edits an existing tag at the caret in place.
 
 const fs = require('fs');
 const path = require('path');
@@ -11,11 +12,15 @@ const code = fs.readFileSync(SRC, 'utf8');
 
 const html = `<!DOCTYPE html><html><body>
   <span class="gpx-editor-wrap">
-    <button type="button" id="gpx-editor-button" aria-expanded="false"></button>
+    <button type="button" id="gpx-editor-button" aria-expanded="false" title="Insert" data-title-edit="Edit"></button>
     <div id="gpx-editor-panel" class="hidden">
+      <strong id="gpx-editor-title" data-text-insert="Insert GPX route" data-text-edit="Edit GPX route">Insert GPX route</strong>
       <button type="button" id="gpx-editor-close"></button>
-      <input type="number" id="gpx-editor-map-height" class="gpx-editor-size">
-      <input type="number" id="gpx-editor-profile-height" class="gpx-editor-size">
+      <p id="gpx-editor-hint" data-text-insert="insert hint" data-text-edit="edit hint">insert hint</p>
+      <input type="number" id="gpx-editor-map-height" class="gpx-editor-size" min="1" max="2000" placeholder="450">
+      <input type="number" id="gpx-editor-profile-height" class="gpx-editor-size" min="1" max="2000" placeholder="180">
+      <input type="number" id="gpx-editor-max-zoom" class="gpx-editor-size" min="1" max="19" placeholder="19">
+      <button type="button" id="gpx-editor-apply" class="hidden"></button>
       <ul id="gpx-editor-list" class="hidden"></ul>
       <p id="gpx-editor-empty">empty</p>
       <input type="file" id="gpx-editor-file">
@@ -24,6 +29,7 @@ const html = `<!DOCTYPE html><html><body>
   <table><tbody id="file-list">
     <tr class="attach-row" data-attach-id="7"><td class="attach-name"><span class="file-name"><a href="#">route.gpx</a></span></td></tr>
     <tr class="attach-row" data-attach-id="8"><td class="attach-name"><span class="file-name">photo.jpg</span></td></tr>
+    <tr class="attach-row" data-attach-id="9"><td class="attach-name"><span class="file-name">other.gpx</span></td></tr>
   </tbody></table>
   <textarea id="message"></textarea>
 </body></html>`;
@@ -41,8 +47,14 @@ const list = doc.getElementById('gpx-editor-list');
 const panel = doc.getElementById('gpx-editor-panel');
 const button = doc.getElementById('gpx-editor-button');
 const empty = doc.getElementById('gpx-editor-empty');
+const title = doc.getElementById('gpx-editor-title');
+const applyButton = doc.getElementById('gpx-editor-apply');
 const mapHeight = doc.getElementById('gpx-editor-map-height');
 const profileHeight = doc.getElementById('gpx-editor-profile-height');
+const maxZoom = doc.getElementById('gpx-editor-max-zoom');
+const message = doc.getElementById('message');
+
+const DEFAULT_TAG = '[gpx=7 map-height=450 profile-height=180 max-zoom=19]';
 
 const sleep = () => new Promise((r) => setTimeout(r, 20));
 
@@ -54,64 +66,140 @@ function assert(name, cond) {
 	}
 }
 
-function clickEntry() {
-	list.querySelector('li button').click();
+function entry(id) {
+	return list.querySelector('li button[data-attach-id="' + id + '"]');
+}
+
+function isOpen() {
+	return !panel.classList.contains('hidden');
+}
+
+function setCaret(pos) {
+	message.focus();
+	message.setSelectionRange(pos, pos);
+}
+
+function dblclickMessage() {
+	message.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
 }
 
 (async () => {
 	await sleep();
 
 	const items = () => list.querySelectorAll('li');
-	assert('filters to a single .gpx attachment', items().length === 1);
+	assert('filters to the .gpx attachments', items().length === 2);
 	assert('shows the .gpx filename', items()[0].textContent === 'route.gpx');
 	assert('carries the attach id', items()[0].querySelector('button').getAttribute('data-attach-id') === '7');
 	assert('non-.gpx is excluded', !list.textContent.includes('photo.jpg'));
 	assert('list visible, empty hidden', !list.classList.contains('hidden') && empty.classList.contains('hidden'));
 
+	// --- Insert mode ---------------------------------------------------------
+
 	button.click();
-	assert('panel opens on button click', !panel.classList.contains('hidden'));
+	assert('panel opens on button click', isOpen());
+	assert('insert mode title', title.textContent === 'Insert GPX route');
+	assert('apply hidden in insert mode', applyButton.classList.contains('hidden'));
+	assert(
+		'fields open filled with the board defaults',
+		mapHeight.value === '450' && profileHeight.value === '180' && maxZoom.value === '19'
+	);
 
-	// Blank fields -> plain tag.
-	clickEntry();
-	assert('blank fields insert [gpx=7]', inserted.length === 1 && inserted[0] === '[gpx=7]');
-	assert('panel closes after insert', panel.classList.contains('hidden'));
+	entry(7).click();
+	assert('defaults insert all keys', inserted[0] === DEFAULT_TAG);
+	assert('panel closes after insert', !isOpen());
 
-	// Both fields -> both keys, in order.
+	button.click();
 	mapHeight.value = '500';
 	profileHeight.value = '250';
-	button.click();
-	clickEntry();
+	maxZoom.value = '15';
+	entry(7).click();
 	assert(
-		'both fields insert map-height then profile-height',
-		inserted[1] === '[gpx=7 map-height=500 profile-height=250]'
+		'filled fields insert their values',
+		inserted[1] === '[gpx=7 map-height=500 profile-height=250 max-zoom=15]'
 	);
-	assert('fields are cleared after insert', mapHeight.value === '' && profileHeight.value === '');
 
-	// Only the map field.
-	mapHeight.value = '300';
 	button.click();
-	clickEntry();
-	assert('only map field inserts map-height', inserted[2] === '[gpx=7 map-height=300]');
+	assert('fields are reset to the defaults on reopening', mapHeight.value === '450' && maxZoom.value === '19');
+	mapHeight.value = '';
+	profileHeight.value = '';
+	maxZoom.value = '';
+	entry(7).click();
+	assert('blank fields fall back to the defaults', inserted[2] === DEFAULT_TAG);
 
-	// Only the profile field.
-	profileHeight.value = '120';
 	button.click();
-	clickEntry();
-	assert('only profile field inserts profile-height', inserted[3] === '[gpx=7 profile-height=120]');
-
-	// Out-of-range and below-range values are dropped.
 	mapHeight.value = '3000';
 	profileHeight.value = '0';
-	button.click();
-	clickEntry();
-	assert('out-of-range values are dropped', inserted[4] === '[gpx=7]');
+	maxZoom.value = '25';
+	entry(7).click();
+	assert('out-of-range values fall back to the defaults', inserted[3] === DEFAULT_TAG);
 
-	// Non-integer values are dropped (jsdom sanitizes type=number to "").
+	// jsdom sanitizes non-numeric values of type=number to "".
+	button.click();
 	mapHeight.value = '12.5';
 	profileHeight.value = 'abc';
+	entry(7).click();
+	assert('non-integer values fall back to the defaults', inserted[4] === DEFAULT_TAG);
+
+	// --- Edit mode -----------------------------------------------------------
+
+	const before = 'Look at this: ';
+	const tag = '[gpx=7 map-height=300]';
+	const after = ' and this [gpx=9] too.';
+	message.value = before + tag + after;
+
+	setCaret(before.length + 3);
+	message.dispatchEvent(new window.Event('keyup'));
+	assert('button shows the edit hint with the caret in a tag', button.classList.contains('gpx-editor-button--edit'));
+	assert('button title switches to edit', button.getAttribute('title') === 'Edit');
+
+	dblclickMessage();
+	assert('double-click inside a tag opens the panel', isOpen());
+	assert('edit mode title', title.textContent === 'Edit GPX route');
+	assert('apply shown in edit mode', !applyButton.classList.contains('hidden'));
+	assert(
+		'fields are filled from the tag, missing keys get defaults',
+		mapHeight.value === '300' && profileHeight.value === '180' && maxZoom.value === '19'
+	);
+	assert('the tag\'s attachment is marked current', entry(7).classList.contains('is-current'));
+	assert('other attachments are not marked current', !entry(9).classList.contains('is-current'));
+
+	let inputEvents = 0;
+	message.addEventListener('input', () => inputEvents++);
+
+	profileHeight.value = '200';
+	applyButton.click();
+	const edited = '[gpx=7 map-height=300 profile-height=200 max-zoom=19]';
+	assert('apply rewrites only the tag under the caret', message.value === before + edited + after);
+	assert('apply fires an input event', inputEvents === 1);
+	assert('panel closes after apply', !isOpen());
+	assert('caret ends after the rewritten tag', message.selectionStart === before.length + edited.length);
+	assert('nothing was inserted while editing', inserted.length === 5);
+
+	// Edit the second tag and switch its route by clicking another attachment.
+	const second = message.value.indexOf('[gpx=9]');
+	setCaret(second + 2);
 	button.click();
-	clickEntry();
-	assert('non-integer values are dropped', inserted[5] === '[gpx=7]');
+	assert('toolbar button opens edit mode with the caret in a tag', isOpen() && title.textContent === 'Edit GPX route');
+	assert('second tag\'s attachment is current', entry(9).classList.contains('is-current'));
+	entry(7).click();
+	assert(
+		'clicking another attachment switches the route in place',
+		message.value === before + edited + ' and this ' + DEFAULT_TAG + ' too.'
+	);
+
+	// Caret just after a tag's "]" means insert, not edit.
+	setCaret(before.length + edited.length);
+	message.dispatchEvent(new window.Event('keyup'));
+	assert('edit hint off with the caret after a tag', !button.classList.contains('gpx-editor-button--edit'));
+	button.click();
+	assert('button opens insert mode with the caret outside a tag', title.textContent === 'Insert GPX route');
+	entry(7).click();
+	assert('insert mode still inserts', inserted.length === 6 && inserted[5] === DEFAULT_TAG);
+
+	// Double-clicking outside a tag does nothing.
+	setCaret(2);
+	dblclickMessage();
+	assert('double-click outside a tag keeps the panel closed', !isOpen());
 
 	process.exitCode = failures ? 1 : 0;
 	if (!failures) {

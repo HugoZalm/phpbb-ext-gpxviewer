@@ -1,6 +1,43 @@
 (function () {
 	'use strict';
 
+	// A [gpx=N ...] tag in the message text, with its key=value pairs.
+	var TAG_PATTERN = /\[gpx=(\d+)([^\]]*)\]/gi;
+	var KEY_PATTERN = /(map-height|profile-height|max-zoom)=(\d+)/gi;
+
+	// Find the tag the caret is strictly inside of (not just before its "[" or
+	// just after its "]"), so a caret left behind a freshly inserted tag still
+	// means "insert another one".
+	function findTagAt(text, pos) {
+		var match;
+
+		TAG_PATTERN.lastIndex = 0;
+
+		while ((match = TAG_PATTERN.exec(text)) !== null) {
+			var start = match.index;
+			var end = start + match[0].length;
+
+			if (pos > start && pos < end) {
+				var values = {};
+				var pair;
+
+				KEY_PATTERN.lastIndex = 0;
+
+				while ((pair = KEY_PATTERN.exec(match[2])) !== null) {
+					values[pair[1].toLowerCase()] = pair[2];
+				}
+
+				return { start: start, end: end, id: match[1], values: values };
+			}
+
+			if (start >= pos) {
+				break;
+			}
+		}
+
+		return null;
+	}
+
 	function init() {
 		var button = document.getElementById('gpx-editor-button');
 		var panel = document.getElementById('gpx-editor-panel');
@@ -13,9 +50,22 @@
 		var empty = document.getElementById('gpx-editor-empty');
 		var fileInput = document.getElementById('gpx-editor-file');
 		var closeButton = document.getElementById('gpx-editor-close');
+		var applyButton = document.getElementById('gpx-editor-apply');
+		var title = document.getElementById('gpx-editor-title');
+		var hint = document.getElementById('gpx-editor-hint');
 		var fileList = document.getElementById('file-list');
-		var mapHeightInput = document.getElementById('gpx-editor-map-height');
-		var profileHeightInput = document.getElementById('gpx-editor-profile-height');
+		var textarea = document.getElementById('message');
+
+		var fields = [
+			{ key: 'map-height', input: document.getElementById('gpx-editor-map-height') },
+			{ key: 'profile-height', input: document.getElementById('gpx-editor-profile-height') },
+			{ key: 'max-zoom', input: document.getElementById('gpx-editor-max-zoom') }
+		];
+
+		var buttonTitle = button.getAttribute('title') || '';
+
+		// The tag being edited, or null when the panel inserts a new one.
+		var editing = null;
 
 		// A GPX attachment is one whose displayed filename ends in .gpx.
 		function isGpx(name) {
@@ -26,9 +76,34 @@
 			return !panel.classList.contains('hidden');
 		}
 
+		// Swap a text between its insert and edit variant, both kept in data-
+		// attributes on the element so this script needs no language strings.
+		function setMode(el, edit) {
+			if (!el) {
+				return;
+			}
+
+			var text = el.getAttribute(edit ? 'data-text-edit' : 'data-text-insert');
+
+			if (text !== null) {
+				el.textContent = text;
+			}
+		}
+
 		function setOpen(open) {
 			panel.classList.toggle('hidden', !open);
 			button.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+			if (!open) {
+				editing = null;
+			}
+
+			setMode(title, !!editing);
+			setMode(hint, !!editing);
+
+			if (applyButton) {
+				applyButton.classList.toggle('hidden', !editing);
+			}
 
 			if (open) {
 				refresh();
@@ -60,52 +135,117 @@
 			return items;
 		}
 
-		// A filled size field is a bare pixel count (1-2000). A blank or invalid
-		// value means "use the board default", so the key is left out of the tag.
-		function sizeKey(name, input) {
-			if (!input) {
-				return '';
-			}
-
-			var raw = input.value.trim();
+		// A field holds a bare integer from 1 to the input's max (2000 px for the
+		// sizes, the board's max zoom for the zoom level).
+		function validNumber(raw, max) {
+			raw = String(raw === null || raw === undefined ? '' : raw).trim();
 
 			if (!/^\d+$/.test(raw)) {
-				return '';
+				return null;
 			}
 
 			var value = parseInt(raw, 10);
 
-			if (value < 1 || value > 2000) {
+			return (value >= 1 && value <= max) ? value : null;
+		}
+
+		// Every tag carries all keys. A blank or invalid field falls back to the
+		// board default, which the template puts in the input's placeholder.
+		function numberKey(field) {
+			var input = field.input;
+
+			if (!input) {
 				return '';
 			}
 
-			return ' ' + name + '=' + value;
+			var max = parseInt(input.max, 10) || 2000;
+			var value = validNumber(input.value, max);
+
+			if (value === null) {
+				value = validNumber(input.placeholder, max);
+			}
+
+			return value === null ? '' : ' ' + field.key + '=' + value;
+		}
+
+		function buildTag(attachId) {
+			return '[gpx=' + attachId + fields.map(numberKey).join('') + ']';
+		}
+
+		// Fill each field from the tag being edited, or with the board default
+		// for a key the tag leaves out (and for every key when inserting).
+		function fillFields(values) {
+			fields.forEach(function (field) {
+				if (field.input) {
+					var value = values ? values[field.key] : undefined;
+					field.input.value = value !== undefined ? value : field.input.placeholder;
+				}
+			});
+		}
+
+		function tagAtCaret() {
+			if (!textarea || typeof textarea.selectionStart !== 'number') {
+				return null;
+			}
+
+			return findTagAt(textarea.value, textarea.selectionStart);
+		}
+
+		function openForInsert() {
+			editing = null;
+			fillFields(null);
+			setOpen(true);
+		}
+
+		function openForEdit(tag) {
+			editing = tag;
+			fillFields(tag.values);
+			setOpen(true);
 		}
 
 		function insert(attachId) {
-			var tag = '[gpx=' + attachId
-				+ sizeKey('map-height', mapHeightInput)
-				+ sizeKey('profile-height', profileHeightInput)
-				+ ']';
-
 			// insert_text() is phpBB's global editor helper (editor.js).
 			if (typeof insert_text === 'function') {
-				insert_text(tag);
+				insert_text(buildTag(attachId));
 			}
 
-			if (mapHeightInput) {
-				mapHeightInput.value = '';
-			}
-			if (profileHeightInput) {
-				profileHeightInput.value = '';
-			}
-
-			var textarea = document.getElementById('message');
 			if (textarea) {
 				textarea.focus();
 			}
 
 			setOpen(false);
+			updateHint();
+		}
+
+		// Replace the edited tag's text in place. The tag is looked up again at
+		// its old position in case the message changed while the panel was open.
+		function apply(attachId) {
+			var tag = editing && textarea ? findTagAt(textarea.value, editing.start + 1) : null;
+
+			if (!tag) {
+				insert(attachId);
+				return;
+			}
+
+			var replacement = buildTag(attachId);
+			var caret = tag.start + replacement.length;
+
+			textarea.value = textarea.value.slice(0, tag.start) + replacement + textarea.value.slice(tag.end);
+			textarea.focus();
+			textarea.setSelectionRange(caret, caret);
+			textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+			setOpen(false);
+			updateHint();
+		}
+
+		// Show on the toolbar button that clicking it edits the tag at the caret.
+		function updateHint() {
+			var inTag = !!tagAtCaret();
+			var editTitle = button.getAttribute('data-title-edit');
+
+			button.classList.toggle('gpx-editor-button--edit', inTag);
+			button.setAttribute('title', inTag && editTitle ? editTitle : buttonTitle);
 		}
 
 		function refresh() {
@@ -122,8 +262,17 @@
 				link.textContent = item.name;
 				link.setAttribute('data-attach-id', item.id);
 
+				if (editing && editing.id === item.id) {
+					link.classList.add('is-current');
+					link.setAttribute('aria-current', 'true');
+				}
+
 				link.addEventListener('click', function () {
-					insert(item.id);
+					if (editing) {
+						apply(item.id);
+					} else {
+						insert(item.id);
+					}
 				});
 
 				entry.appendChild(link);
@@ -152,12 +301,47 @@
 
 		button.addEventListener('click', function (e) {
 			e.preventDefault();
-			setOpen(!isOpen());
+
+			if (isOpen()) {
+				setOpen(false);
+				return;
+			}
+
+			var tag = tagAtCaret();
+
+			if (tag) {
+				openForEdit(tag);
+			} else {
+				openForInsert();
+			}
 		});
+
+		if (applyButton) {
+			applyButton.addEventListener('click', function () {
+				if (editing) {
+					apply(editing.id);
+				}
+			});
+		}
 
 		if (closeButton) {
 			closeButton.addEventListener('click', function () {
 				setOpen(false);
+			});
+		}
+
+		if (textarea) {
+			// Double-clicking inside a [gpx] tag opens the panel to edit it.
+			textarea.addEventListener('dblclick', function () {
+				var tag = tagAtCaret();
+
+				if (tag) {
+					openForEdit(tag);
+				}
+			});
+
+			['click', 'keyup', 'select', 'focus'].forEach(function (type) {
+				textarea.addEventListener(type, updateHint);
 			});
 		}
 

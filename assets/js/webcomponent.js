@@ -67,6 +67,20 @@
         return raw;
     }
 
+    // Resolve a max zoom level from a per-element attribute. Authors can only
+    // lower the board's limit (tiles above the server's maximum come back grey),
+    // so a bare integer must sit within 1..defaultValue.
+    function zoom(attrValue, defaultValue) {
+        const raw = String(attrValue === null || attrValue === undefined ? '' : attrValue).trim();
+
+        if (!/^\d+$/.test(raw)) {
+            return defaultValue;
+        }
+
+        const level = parseInt(raw, 10);
+        return (level >= 1 && level <= defaultValue) ? level : defaultValue;
+    }
+
     // Load each external file only once, even with multiple components on a page.
     const cache = {};
 
@@ -127,6 +141,8 @@
 
             const mapHeight = height(this.getAttribute('map-height'), config('mapHeight'));
             const profileHeight = height(this.getAttribute('profile-height'), config('profileHeight'));
+            const maxZoom = zoom(this.getAttribute('max-zoom'), config('maxZoom'));
+            this._maxZoom = maxZoom;
 
             // Light DOM (no Shadow DOM): Leaflet CSS and the elevation plugin's
             // selector-based "elevationDiv" don't work well inside a shadow root.
@@ -190,10 +206,10 @@
                     __LALMOSTOVER: ALMOSTOVER_JS,
                 });
 
-                const map = L.map(mapId).setView([52.1, 5.2], 7);
+                const map = L.map(mapId, { maxZoom: maxZoom }).setView([52.1, 5.2], Math.min(7, maxZoom));
 
                 L.tileLayer(config('tileUrl'), {
-                    maxZoom: config('maxZoom'),
+                    maxZoom: maxZoom,
                     attribution: config('attribution'),
                 }).addTo(map);
 

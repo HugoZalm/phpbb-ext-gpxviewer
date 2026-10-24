@@ -20,7 +20,7 @@ const { window } = dom;
 const doc = window.document;
 
 // Config default heights, as the extension emits them (already carrying px).
-window.GPX_VIEWER_CONFIG = { mapHeight: '450px', profileHeight: '180px' };
+window.GPX_VIEWER_CONFIG = { mapHeight: '450px', profileHeight: '180px', maxZoom: 19 };
 
 // A never-resolving fetch keeps connectedCallback from reaching the heavy
 // Leaflet/D3 loading, so the containers it builds synchronously can be read.
@@ -72,6 +72,13 @@ assert('upper bound map-height is accepted', heightOf(upperBound, '.gpx-map') ==
 const defaults = makeViewer({ 'data-attach': '7' });
 assert('no map-height uses config default', heightOf(defaults, '.gpx-map') === 'height:450px');
 assert('no profile-height uses config default', heightOf(defaults, '.gpx-profile') === 'height:180px');
+
+// max-zoom may only lower the board's limit.
+assert('no max-zoom uses config default', defaults._maxZoom === 19);
+assert('max-zoom below the board max is used', makeViewer({ 'data-attach': '11', 'max-zoom': '14' })._maxZoom === 14);
+assert('max-zoom above the board max falls back', makeViewer({ 'data-attach': '12', 'max-zoom': '22' })._maxZoom === 19);
+assert('empty max-zoom falls back', makeViewer({ 'data-attach': '13', 'max-zoom': '' })._maxZoom === 19);
+assert('zero max-zoom falls back', makeViewer({ 'data-attach': '14', 'max-zoom': '0' })._maxZoom === 19);
 
 process.exitCode = failures ? 1 : 0;
 if (!failures) {
