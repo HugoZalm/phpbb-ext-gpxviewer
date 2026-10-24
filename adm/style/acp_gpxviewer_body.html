@@ -1,0 +1,54 @@
+{% INCLUDE 'overall_header.html' %}
+
+<a id="maincontent"></a>
+
+<h1>{{ lang('ACP_GPXVIEWER_TITLE') }}</h1>
+
+<p>{{ lang('ACP_GPXVIEWER_EXPLAIN') }}</p>
+
+{% if S_ERROR %}
+	<div class="errorbox">
+		<h3>{{ lang('WARNING') }}</h3>
+		<p>{{ ERROR_MSG }}</p>
+	</div>
+{% endif %}
+
+<form id="gpxviewer_acp" name="gpxviewer_acp" method="post" action="{{ U_ACTION }}">
+
+	<fieldset>
+		<legend>{{ lang('ACP_GPXVIEWER_TILE') }}</legend>
+		<dl>
+			<dt><label for="gpxviewer_tile_url">{{ lang('ACP_GPXVIEWER_TILE_URL') ~ lang('COLON') }}</label><br /><span>{{ lang('ACP_GPXVIEWER_TILE_URL_EXPLAIN') }}</span></dt>
+			<dd><input type="text" id="gpxviewer_tile_url" name="gpxviewer_tile_url" value="{{ GPXVIEWER_TILE_URL|e('html_attr') }}" size="60" maxlength="255" class="text" /></dd>
+		</dl>
+		<dl>
+			<dt><label for="gpxviewer_attribution">{{ lang('ACP_GPXVIEWER_ATTRIBUTION') ~ lang('COLON') }}</label><br /><span>{{ lang('ACP_GPXVIEWER_ATTRIBUTION_EXPLAIN') }}</span></dt>
+			<dd><textarea id="gpxviewer_attribution" name="gpxviewer_attribution" rows="3" cols="60">{{ GPXVIEWER_ATTRIBUTION|e }}</textarea></dd>
+		</dl>
+	</fieldset>
+
+	<fieldset>
+		<legend>{{ lang('ACP_GPXVIEWER_SIZING') }}</legend>
+		<dl>
+			<dt><label for="gpxviewer_map_height">{{ lang('ACP_GPXVIEWER_MAP_HEIGHT') ~ lang('COLON') }}</label><br /><span>{{ lang('ACP_GPXVIEWER_MAP_HEIGHT_EXPLAIN') }}</span></dt>
+			<dd><input type="number" id="gpxviewer_map_height" name="gpxviewer_map_height" value="{{ GPXVIEWER_MAP_HEIGHT }}" min="1" max="2000" class="text" /> {{ lang('ACP_GPXVIEWER_PIXELS') }}</dd>
+		</dl>
+		<dl>
+			<dt><label for="gpxviewer_profile_height">{{ lang('ACP_GPXVIEWER_PROFILE_HEIGHT') ~ lang('COLON') }}</label><br /><span>{{ lang('ACP_GPXVIEWER_PROFILE_HEIGHT_EXPLAIN') }}</span></dt>
+			<dd><input type="number" id="gpxviewer_profile_height" name="gpxviewer_profile_height" value="{{ GPXVIEWER_PROFILE_HEIGHT }}" min="1" max="2000" class="text" /> {{ lang('ACP_GPXVIEWER_PIXELS') }}</dd>
+		</dl>
+		<dl>
+			<dt><label for="gpxviewer_max_zoom">{{ lang('ACP_GPXVIEWER_MAX_ZOOM') ~ lang('COLON') }}</label><br /><span>{{ lang('ACP_GPXVIEWER_MAX_ZOOM_EXPLAIN') }}</span></dt>
+			<dd><input type="number" id="gpxviewer_max_zoom" name="gpxviewer_max_zoom" value="{{ GPXVIEWER_MAX_ZOOM }}" min="1" max="22" class="text" /></dd>
+		</dl>
+	</fieldset>
+
+	<fieldset class="submit-buttons">
+		<input class="button1" type="submit" id="submit" name="submit" value="{{ lang('SUBMIT') }}" />&nbsp;
+		<input class="button2" type="reset" id="reset" name="reset" value="{{ lang('RESET') }}" />
+		{{ S_FORM_TOKEN }}
+	</fieldset>
+
+</form>
+
+{% INCLUDE 'overall_footer.html' %}

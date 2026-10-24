@@ -1,0 +1,19 @@
+services:
+    hugozalm.gpxviewer.listener:
+        class: hugozalm\gpxviewer\event\main_listener
+        arguments:
+            - '@template'
+            - '@language'
+            - '@config'
+        tags:
+            - { name: event.listener }
+
+    hugozalm.gpxviewer.controller.acp:
+        class: hugozalm\gpxviewer\controller\acp_controller
+        arguments:
+            - '@config'
+            - '@language'
+            - '@log'
+            - '@request'
+            - '@template'
+            - '@user'

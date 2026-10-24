@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>gpxviewer fixture</title>
+<style>
+    body { font: 15px/1.5 sans-serif; margin: 20px; max-width: 900px; }
+    section { margin-bottom: 32px; }
+    h2 { font-size: 16px; margin-bottom: 4px; }
+    .note { color: #555; font-size: 13px; }
+    #diagnostics { background: #111; color: #6f6; padding: 12px; white-space: pre-wrap; min-height: 20px; }
+</style>
+<script>
+    // Page-level config object; the component falls back to its own defaults.
+    window.GPX_VIEWER_CONFIG = {
+        profileHeight: '140px',
+    };
+    window.__gpxFixtureAttach = new URLSearchParams(location.search).get('attach');
+</script>
+<script defer src="../assets/js/webcomponent.js"></script>
+</head>
+<body>
+<h1>gpxviewer fixture page</h1>
+
+<section>
+    <h2>1. Attachment by id (criterion 1)</h2>
+    <p class="note" id="attach-hint"></p>
+    <gpx-viewer id="viewer-attach"></gpx-viewer>
+</section>
+
+<section>
+    <h2>2. Unknown attachment id (criterion 2)</h2>
+    <p class="note">Expects a visible error message, not a blank or broken viewer.</p>
+    <gpx-viewer id="viewer-404" data-attach="999999"></gpx-viewer>
+</section>
+
+<section>
+    <h2>3. Invalid GPX content (criterion 2)</h2>
+    <p class="note">Expects a visible error message.</p>
+    <gpx-viewer id="viewer-broken" src="./broken.gpx"></gpx-viewer>
+</section>
+
+<section>
+    <h2>4. Valid route by direct URL (criteria 1 + 3)</h2>
+    <p class="note">Same page as viewer 1: both must render independently.</p>
+    <gpx-viewer id="viewer-sample" src="./sample.gpx" map-height="320px"></gpx-viewer>
+</section>
+
+<section>
+    <h2>5. Per-tag height overrides (bare integers)</h2>
+    <p class="note">Bare integers are treated as pixels; the profile override differs from the page config.</p>
+    <gpx-viewer id="viewer-sizes" src="./sample.gpx" map-height="240" profile-height="100"></gpx-viewer>
+</section>
+
+<section>
+    <h2>Diagnostics</h2>
+    <pre id="diagnostics">pending…</pre>
+</section>
+
+<script>
+    (function () {
+        var attach = window.__gpxFixtureAttach;
+        var viewer = document.getElementById('viewer-attach');
+        var hint = document.getElementById('attach-hint');
+        if (attach) {
+            viewer.setAttribute('data-attach', attach);
+            hint.textContent = 'Using attachment id ' + attach + '.';
+        } else {
+            hint.textContent = 'No ?attach=N given: this viewer should show an error message. '
+                + 'Upload a .gpx attachment and reload with ?attach=N to test a real id.';
+        }
+
+        var problems = [];
+        window.addEventListener('error', function (e) {
+            if (e.target && e.target.tagName === 'SCRIPT') {
+                problems.push('script load error: ' + e.target.src);
+            } else {
+                problems.push('error: ' + (e.message || e.type));
+            }
+        }, true);
+        window.addEventListener('unhandledrejection', function (e) {
+            problems.push('unhandledrejection: ' + e.reason);
+        });
+
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                var out = [];
+                performance.getEntriesByType('resource').forEach(function (r) {
+                    if (r.responseStatus >= 400) {
+                        out.push('HTTP ' + r.responseStatus + ' ' + r.name);
+                    } else if (/unpkg\.com|jsdelivr\.net|cdnjs/.test(r.name)) {
+                        out.push('EXTERNAL ' + r.name);
+                    }
+                });
+                problems.forEach(function (p) { out.push('JS ' + p); });
+
+                document.querySelectorAll('gpx-viewer').forEach(function (v, i) {
+                    var err = v.querySelector('.gpx-error');
+                    var map = v.querySelector('.leaflet-container');
+                    var chart = v.querySelector('.gpx-profile svg');
+                    out.push('viewer[' + (i + 1) + '] ' + (v.id || '') + ': ' + (err
+                        ? 'ERROR "' + err.textContent + '"'
+                        : (map ? 'map ok, chart ' + (chart ? 'ok' : 'missing') : 'NOT-INITIALISED')));
+                });
+                out.push('maps=' + document.querySelectorAll('.leaflet-container').length +
+                    ' errorBoxes=' + document.querySelectorAll('.gpx-error').length);
+
+                var clean = out.length === 0;
+                document.getElementById('diagnostics').textContent = clean
+                    ? 'CLEAN: no JS errors, no 404s, no external CDN requests'
+                    : out.join('\n');
+                window.__gpxDiagnostics = out;
+                document.title = 'DIAG-DONE';
+            }, 4000);
+        });
+    })();
+</script>
+</body>
+</html>

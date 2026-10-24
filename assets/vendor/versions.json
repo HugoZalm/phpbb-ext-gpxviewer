@@ -1,0 +1,47 @@
+{
+  "note": "Pinned third-party browser libraries bundled with the gpxviewer extension. Paths are relative to assets/vendor/.",
+  "libraries": [
+    {
+      "name": "leaflet",
+      "version": "1.9.4",
+      "license": "BSD-2-Clause",
+      "source": "https://unpkg.com/leaflet@1.9.4/dist/",
+      "files": "leaflet/leaflet.js, leaflet/leaflet.js.map, leaflet/leaflet.css, leaflet/images/"
+    },
+    {
+      "name": "d3",
+      "version": "7.8.4",
+      "license": "ISC",
+      "source": "https://unpkg.com/d3@7.8.4/dist/d3.min.js",
+      "files": "d3/d3.min.js"
+    },
+    {
+      "name": "@raruto/leaflet-elevation",
+      "version": "2.6.1",
+      "license": "GPL-3.0",
+      "source": "https://registry.npmjs.org/@raruto/leaflet-elevation/-/leaflet-elevation-2.6.1.tgz",
+      "files": "leaflet-elevation/ (full package tree: dist/, src/, libs/, images/, LICENSE)"
+    },
+    {
+      "name": "@tmcw/togeojson",
+      "version": "5.6.2",
+      "license": "MIT",
+      "source": "https://unpkg.com/@tmcw/togeojson@5.6.2/dist/togeojson.umd.js",
+      "files": "togeojson/togeojson.umd.js"
+    },
+    {
+      "name": "leaflet-geometryutil",
+      "version": "0.10.1",
+      "license": "BSD-3-Clause",
+      "source": "https://unpkg.com/leaflet-geometryutil@0.10.1/src/leaflet.geometryutil.js",
+      "files": "leaflet-geometryutil/leaflet.geometryutil.js"
+    },
+    {
+      "name": "leaflet-almostover",
+      "version": "1.0.1",
+      "license": "MIT",
+      "source": "https://unpkg.com/leaflet-almostover@1.0.1/src/leaflet.almostover.js",
+      "files": "leaflet-almostover/leaflet.almostover.js"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{% if S_SHOW_ATTACH_BOX and not S_PRIVMSGS %}
+	<span class="gpx-editor-wrap">
+		<button type="button" class="button button-icon-only bbcode-gpx" id="gpx-editor-button"
+			title="{{ lang('GPX_BUTTON_EXPLAIN') }}"
+			aria-haspopup="true" aria-expanded="false" aria-controls="gpx-editor-panel">
+			<i class="icon fa-route fa-fw" aria-hidden="true"></i>
+		</button>
+
+		<div class="gpx-editor-panel hidden" id="gpx-editor-panel" role="dialog" aria-label="{{ lang('GPX_PANEL_TITLE') }}">
+			<div class="gpx-editor-head">
+				<strong>{{ lang('GPX_PANEL_TITLE') }}</strong>
+				<button type="button" class="button2 gpx-editor-close" id="gpx-editor-close" title="{{ lang('GPX_PANEL_CLOSE') }}" aria-label="{{ lang('GPX_PANEL_CLOSE') }}">&times;</button>
+			</div>
+			<p class="gpx-editor-hint">{{ lang('GPX_PANEL_HINT') }}</p>
+			<div class="gpx-editor-sizes">
+				<label for="gpx-editor-map-height">{{ lang('GPX_PANEL_MAP_HEIGHT') }}</label>
+				<input type="number" min="1" max="2000" id="gpx-editor-map-height" class="gpx-editor-size" placeholder="{{ GPX_PANEL_MAP_HEIGHT_DEFAULT }}" />
+				<label for="gpx-editor-profile-height">{{ lang('GPX_PANEL_PROFILE_HEIGHT') }}</label>
+				<input type="number" min="1" max="2000" id="gpx-editor-profile-height" class="gpx-editor-size" placeholder="{{ GPX_PANEL_PROFILE_HEIGHT_DEFAULT }}" />
+			</div>
+			<ul class="gpx-editor-list hidden" id="gpx-editor-list"></ul>
+			<p class="gpx-editor-empty" id="gpx-editor-empty">{{ lang('GPX_PANEL_EMPTY') }}</p>
+			<div class="gpx-editor-upload">
+				<label class="button2 gpx-editor-upload-label" for="gpx-editor-file">{{ lang('GPX_PANEL_UPLOAD') }}</label>
+				<input type="file" id="gpx-editor-file" class="gpx-editor-file" accept=".gpx" multiple />
+			</div>
+		</div>
+	</span>
+
+	{% INCLUDEJS '@hugozalm_gpxviewer/gpxeditor.js' %}
+	{% INCLUDECSS '@hugozalm_gpxviewer/gpxeditor.css' %}
+{% endif %}

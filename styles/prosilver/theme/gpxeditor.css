@@ -1,0 +1,133 @@
+.gpx-editor-wrap {
+	position: relative;
+	display: inline-block;
+	vertical-align: top;
+}
+
+.gpx-editor-panel {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	z-index: 1000;
+	margin-top: 6px;
+	width: 280px;
+	max-width: 90vw;
+	padding: 10px 12px;
+	background-color: #ffffff;
+	border: 1px solid #b4bac0;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	text-align: left;
+	color: #333333;
+	font-size: 1em;
+	font-weight: normal;
+	font-style: normal;
+}
+
+.gpx-editor-panel.hidden {
+	display: none;
+}
+
+.gpx-editor-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.gpx-editor-head strong {
+	font-weight: bold;
+}
+
+.gpx-editor-close {
+	line-height: 1;
+	padding: 1px 6px;
+	cursor: pointer;
+}
+
+.gpx-editor-hint {
+	margin: 0 0 8px;
+	font-size: 0.9em;
+}
+
+.gpx-editor-sizes {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 4px 6px;
+	margin: 0 0 8px;
+	font-size: 0.9em;
+}
+
+.gpx-editor-sizes label {
+	flex: 0 0 auto;
+}
+
+.gpx-editor-size {
+	width: 72px;
+}
+
+.gpx-editor-size:not(:last-child) {
+	margin-right: 6px;
+}
+
+.gpx-editor-list {
+	margin: 0 0 8px;
+	padding: 0;
+	list-style: none;
+	max-height: 220px;
+	overflow-y: auto;
+}
+
+.gpx-editor-list.hidden {
+	display: none;
+}
+
+.gpx-editor-list li {
+	margin: 0;
+}
+
+.gpx-editor-item {
+	display: block;
+	width: 100%;
+	padding: 4px 6px;
+	text-align: left;
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	cursor: pointer;
+	color: #105289;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gpx-editor-item:hover,
+.gpx-editor-item:focus {
+	background-color: #e3e9ec;
+}
+
+.gpx-editor-empty {
+	margin: 0 0 8px;
+	font-size: 0.9em;
+	font-style: italic;
+}
+
+.gpx-editor-empty.hidden {
+	display: none;
+}
+
+.gpx-editor-upload {
+	margin-top: 4px;
+}
+
+.gpx-editor-file {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+}

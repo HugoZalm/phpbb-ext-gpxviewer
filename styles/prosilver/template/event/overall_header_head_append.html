@@ -1,0 +1,4 @@
+{% if S_GPX_VIEWER %}
+	<script>window.GPX_VIEWER_CONFIG = {{ GPX_VIEWER_CONFIG|raw }};</script>
+	<script src="{{ GPX_VIEWER_SCRIPT }}" defer></script>
+{% endif %}

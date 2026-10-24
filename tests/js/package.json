@@ -1,0 +1,12 @@
+{
+  "name": "gpxviewer-js-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "jsdom behaviour tests for the GPX Viewer editor panel and web component.",
+  "scripts": {
+    "test": "node gpxeditor.test.js && node webcomponent.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  }
+}
