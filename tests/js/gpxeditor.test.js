@@ -53,6 +53,7 @@ const mapHeight = doc.getElementById('gpx-editor-map-height');
 const profileHeight = doc.getElementById('gpx-editor-profile-height');
 const maxZoom = doc.getElementById('gpx-editor-max-zoom');
 const message = doc.getElementById('message');
+const closeButton = doc.getElementById('gpx-editor-close');
 
 const DEFAULT_TAG = '[gpx=7 map-height=450 profile-height=180 max-zoom=19]';
 
@@ -74,9 +75,23 @@ function isOpen() {
 	return !panel.classList.contains('hidden');
 }
 
-function setCaret(pos) {
+function select(start, end) {
 	message.focus();
-	message.setSelectionRange(pos, pos);
+	message.setSelectionRange(start, end);
+	message.dispatchEvent(new window.Event('select'));
+}
+
+function setCaret(pos) {
+	select(pos, pos);
+}
+
+// Select a range, click the GPX button and report the panel's mode.
+function modeForSelection(start, end) {
+	select(start, end);
+	button.click();
+	const mode = !isOpen() ? 'closed' : title.textContent === 'Edit GPX route' ? 'edit' : 'insert';
+	closeButton.click();
+	return mode;
 }
 
 function dblclickMessage() {
@@ -200,6 +215,44 @@ function dblclickMessage() {
 	setCaret(2);
 	dblclickMessage();
 	assert('double-click outside a tag keeps the panel closed', !isOpen());
+
+	// --- Selection -----------------------------------------------------------
+
+	// A selection overlapping a tag edits it; one that only touches its "[" or
+	// "]" from outside does not, in line with the caret rule above.
+	const selBefore = 'See ';
+	const selTag = '[gpx=9 max-zoom=12]';
+	message.value = selBefore + selTag + ' here.';
+	const tagStart = selBefore.length;
+	const tagEnd = tagStart + selTag.length;
+
+	select(tagStart, tagEnd);
+	assert('edit hint on with the whole tag selected', button.classList.contains('gpx-editor-button--edit'));
+	assert('button title switches to edit with a selected tag', button.getAttribute('title') === 'Edit');
+	button.click();
+	assert('selecting the whole tag opens edit mode', isOpen() && title.textContent === 'Edit GPX route');
+	assert('selected tag\'s attachment is current', entry(9).classList.contains('is-current'));
+	assert('fields are filled from the selected tag', maxZoom.value === '12');
+	closeButton.click();
+
+	assert('a selection overlapping the tag\'s start opens edit mode', modeForSelection(1, tagStart + 3) === 'edit');
+	assert('a selection overlapping the tag\'s end opens edit mode', modeForSelection(tagEnd - 2, tagEnd + 3) === 'edit');
+	assert('a selection ending at the tag\'s "[" opens insert mode', modeForSelection(0, tagStart) === 'insert');
+	assert('a selection starting after the tag\'s "]" opens insert mode', modeForSelection(tagEnd, tagEnd + 3) === 'insert');
+	assert('a selection away from any tag opens insert mode', modeForSelection(0, 2) === 'insert');
+
+	select(0, tagStart);
+	assert('edit hint off with a selection ending at the tag\'s "["', !button.classList.contains('gpx-editor-button--edit'));
+	select(0, 2);
+	assert('edit hint off with a selection away from any tag', !button.classList.contains('gpx-editor-button--edit'));
+	assert('button title back to insert', button.getAttribute('title') === 'Insert');
+
+	// A selection spanning two tags edits the first one.
+	message.value = '[gpx=7] and [gpx=9]';
+	select(0, message.value.length);
+	button.click();
+	assert('a selection spanning two tags edits the first', isOpen() && entry(7).classList.contains('is-current') && !entry(9).classList.contains('is-current'));
+	closeButton.click();
 
 	process.exitCode = failures ? 1 : 0;
 	if (!failures) {

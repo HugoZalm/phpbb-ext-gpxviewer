@@ -5,19 +5,31 @@
 	var TAG_PATTERN = /\[gpx=(\d+)([^\]]*)\]/gi;
 	var KEY_PATTERN = /(map-height|profile-height|max-zoom)=(\d+)/gi;
 
-	// Find the tag the caret is strictly inside of (not just before its "[" or
-	// just after its "]"), so a caret left behind a freshly inserted tag still
-	// means "insert another one".
-	function findTagAt(text, pos) {
+	// Find the tag a caret at "from" is strictly inside of (not just before its
+	// "[" or just after its "]"), so a caret left behind a freshly inserted tag
+	// still means "insert another one". With a selection ("from" to "to"), find
+	// the first tag it overlaps; merely touching the "[" or "]" does not count.
+	function findTagAt(text, from, to) {
 		var match;
+
+		if (to === undefined) {
+			to = from;
+		}
 
 		TAG_PATTERN.lastIndex = 0;
 
 		while ((match = TAG_PATTERN.exec(text)) !== null) {
 			var start = match.index;
 			var end = start + match[0].length;
+			var overlaps;
 
-			if (pos > start && pos < end) {
+			if (to === from) {
+				overlaps = from > start && from < end;
+			} else {
+				overlaps = from < end && to > start;
+			}
+
+			if (overlaps) {
 				var values = {};
 				var pair;
 
@@ -30,7 +42,7 @@
 				return { start: start, end: end, id: match[1], values: values };
 			}
 
-			if (start >= pos) {
+			if (start >= to) {
 				break;
 			}
 		}
@@ -188,7 +200,7 @@
 				return null;
 			}
 
-			return findTagAt(textarea.value, textarea.selectionStart);
+			return findTagAt(textarea.value, textarea.selectionStart, textarea.selectionEnd);
 		}
 
 		function openForInsert() {
